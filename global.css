@@ -1,0 +1,60 @@
+@font-face {
+	font-family: "Passero One";
+	src: url(PasseroOne-Regular.ttf) format("truetype");
+}
+html{
+	background:#fff url(images/bg.png) bottom left fixed repeat-x;
+}
+body{
+	padding:0;
+	margin:2em auto 0;
+	width:810px;
+	background-color:rgba(255,255,255,0.9);
+}
+nav{
+	margin-top:2em;
+	text-align:center;
+}
+nav > a {
+	font-family:"Passero One";
+	font-size:24px;
+	text-decoration:none;
+	
+	display:inline-block;
+	padding:5px 10px;
+	width:120px;
+	
+	background-color:#fff;
+	color:#000;
+	border:2px solid #000;
+	
+	transition: background-color .15s;
+	-moz-transition: background-color .15s;
+	-o-transition: background-color .15s;
+	-webkit-transition: background-color .15s;
+	-ms-transition: background-color .15s;
+}
+
+nav > a:hover {
+	background-color:#fc2;
+}
+
+canvas{
+	border:1px solid black;
+	display:block;
+	margin:auto;
+	background:white;
+}
+
+strong, header{
+	font-family:"Passero One";
+}
+
+header{
+	text-align:center
+}
+section{max-width:600px;margin:auto;}
+section + section{margin-top:1em;border-top:1px dashed #aaa;}
+section > p{text-align:justify;}
+section > p:not(:only-child){width:80%;}
+section > p:nth-child(even):not(:only-child){margin-left:19%;}
