@@ -6,11 +6,9 @@ html{
 	background:#fff url(images/bg.png) bottom left fixed repeat-x;
 }
 body{
-	padding:0;
 	margin:2em auto 0;
-	width:810px;
-	background-color:rgba(255,255,255,0.9);
 }
+body > *:not(footer){background-color:rgba(255,255,255,0.9);}
 nav{
 	margin-top:2em;
 	text-align:center;
@@ -40,10 +38,16 @@ nav > a:hover {
 }
 
 canvas{
-	border:1px solid black;
+	border:3px solid black;
 	display:block;
 	margin:auto;
 	background:white;
+
+	transition: width .15s;
+	-moz-transition: width .15s;
+	-o-transition: width .15s;
+	-webkit-transition: width .15s;
+	-ms-transition: width .15s;
 }
 
 strong, header{
@@ -53,8 +57,7 @@ strong, header{
 header{
 	text-align:center
 }
-section{max-width:600px;margin:auto;}
+section{padding:1em;max-width:480px;margin:auto;}
 section + section{margin-top:1em;border-top:1px dashed #aaa;}
 section > p{text-align:justify;}
-section > p:not(:only-child){width:80%;}
-section > p:nth-child(even):not(:only-child){margin-left:19%;}
+section > p > img{vertical-align:middle;}
