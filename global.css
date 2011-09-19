@@ -8,12 +8,17 @@ html{
 body{
 	margin:2em auto 0;
 }
-body > *:not(footer){background-color:rgba(255,255,255,0.9);}
+body > *:not(footer):not(canvas){background-color:rgba(255,255,255,0.9);}
 nav{
 	margin-top:2em;
 	text-align:center;
 }
-nav > a {
+footer{
+	max-width:810px;
+	margin:auto;
+}
+footer > p {text-align:center; font-family:"Passero One"}
+nav a {
 	font-family:"Passero One";
 	font-size:24px;
 	text-decoration:none;
@@ -26,12 +31,18 @@ nav > a {
 	color:#000;
 	border:2px solid #000;
 	
-	transition: background-color .15s;
-	-moz-transition: background-color .15s;
-	-o-transition: background-color .15s;
-	-webkit-transition: background-color .15s;
-	-ms-transition: background-color .15s;
+	transition: all .15s;
+	-moz-transition: all .15s;
+	-o-transition: all .15s;
+	-webkit-transition: all .15s;
+	-ms-transition: all .15s;
 }
+nav a.button {
+	font-size:12px;
+	padding:2px 10px;
+	width:120px;
+}
+nav a.button:hover{background-color:#00f;color:#fff;}
 
 nav > a:hover {
 	background-color:#fc2;
@@ -41,7 +52,7 @@ canvas{
 	border:3px solid black;
 	display:block;
 	margin:auto;
-	background:white;
+	background-color:#fff !important;
 
 	transition: width .15s;
 	-moz-transition: width .15s;

@@ -1,5 +1,8 @@
 /*
+* v1.0RC
 * Geometry: Circle
+*
+*
 *  A game by Benjamin Kästner
 *  For more information please visist http://gc.quadda.de
 *  ~ Geometry: Circle is free to play and comes without any costs or warranties.
@@ -15,6 +18,7 @@
 ***************************************************************************************************
 *
 * Geometry: Circle
+*
 *  Ein Spiel von Benjamin Kästner.
 *  Besuche http://gc.quadda.de für mehr Informationen.
 *  ~ Geometry: Circle ist kostenlos verfügbar ohne jegliche Ansprüche auf Fehlerfreiheit.
@@ -190,11 +194,22 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		window.removeEventListener("keydown",lC.preStartGame,false);
 		window.addEventListener("keydown",lC.pressKey,false);
 	},
+	socialScore : function(e){
+		var tx = e.offsetX ? e.offsetX : e.pageX - lC.canvas.offsetLeft;
+		var ty = e.offsetY ? e.offsetY : e.pageY - lC.canvas.offsetTop;
+		if(Math.abs(tx-constants.width/2) < 100 && Math.abs(ty - constants.height/1.2) < 20)
+			window.open("https://twitter.com/intent/tweet?text="+encodeURI("\"Geometry: Circle\": "+Math.floor(lC.score)+" points (highscore: "+Math.floor(lC.highScore)+" points). Try to beat it! http://gc.quadda.de"));
+		
+	},
 	gameOver: function(e){
 		document.cookie = "highscore="+Math.floor(lC.highScore)+";";
 		blinkingTexts.push({t:"Your Score: "+Math.floor(lC.score),f:"24px "+constants.defaultFont,x:constants.width/2,y:((constants.height/2)-48),b:false});
 		blinkingTexts.push({t:"Press r to restart",f:"24px "+constants.defaultFont,x:constants.width/2,y:constants.height/2,s:0});
+		
+		blinkingTexts.push({t:"Tweet your score!",c:"#00f",f:"24px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height/1.2,s:0});
+		
 		window.addEventListener("keydown",lC.preStartGame,false);
+		lC.canvas.addEventListener("click",lC.socialScore,false);
 	},
 	preStartGame: function(e){
 		if(e.keyCode >48 && e.keyCode < 58){	// 1-9
@@ -222,7 +237,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 	},
 	restartGame: function(e){
 		window.removeEventListener("keydown",lC.preStartGame,false);
-
+		lC.canvas.removeEventListener("click",lC.socialScore,false);
 		particles.splice(0,particles.length);
 		circloids.splice(0,circloids.length);
 		niceParticles.splice(0,niceParticles.length);
@@ -247,6 +262,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		blinkingTexts.push({t:"space:     shoot",f:"24px "+constants.defaultFont,b:false,x:constants.width/1.6,y:constants.height/1.25,a:"left"});
 		blinkingTexts.push({t:"Music: Ochen Priyatno [Pleased to Meetcha] by Hyphen Jones",f:"14px "+constants.defaultFont,b:false,x:constants.margin,y:constants.height-40,a:"left"});
 		blinkingTexts.push({t:"Font: \"Passero One\" by Viktoriya Grabowskay",f:"14px "+constants.defaultFont,b:false,x:constants.width-constants.margin,y:constants.height-40,a:"right"});
+		blinkingTexts.push({t:"© Benjamin Kästner 2011",f:"10px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height-10,a:"center"});
 		lC.gameLoop();
 	},
 	blackScreenWithText: function(text){
@@ -281,8 +297,10 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		if(lC.score > lC.highScore){
 			lC.highScore = lC.score;	// dingdingding :D
 		}
-		if(pos && pos.x && pos.y)
-			blinkingTexts.push({x:pos.x,y:pos.y,l:30,s:-1,t:"+ "+Math.floor(points),f:"1em "+constants.defaultFont,b:false});
+		if(pos && pos.x && pos.y){
+			var tf = Math.floor(points);
+			blinkingTexts.push({x:pos.x,y:pos.y,l:30,s:-1,t:"+ "+tf,f:tf+"px "+constants.defaultFont,b:false});
+		}
 	},
 	controlMovement : function (){
 		if(lC.keys[37] || lC.keys[65])
@@ -438,6 +456,8 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.ctx.clearRect(0,0,lC.canvas.width,lC.canvas.height);
 	},
 	drawBackground : function(p){
+			if(p.c)
+				lC.ctx.fillStyle = p.c
 			lC.ctx.fillRect(p.x,p.y,p.w,p.h);
 			lC.ctx.strokeRect(p.x,p.y,p.w,p.h+5);
 		},
@@ -494,6 +514,8 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 				lC.ctx.font = p.f;
 			if(p.a)
 				lC.ctx.textAlign = p.a;
+			if(p.c)
+				lC.ctx.fillStyle = p.c;
 			lC.ctx.fillText(p.t, p.x, p.y += (p.s ? p.s : 0));
 		},
 	drawDebugInformation: function(){
@@ -517,6 +539,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.ctx.font = "1em "+constants.defaultFont;
 		lC.ctx.textAlign = "right";
 		lC.ctx.textBaseline = "top";
+		lC.ctx.fillStyle = "#000";
 		lC.ctx.fillText('Score: '+Math.floor(lC.score), constants.width, 0);
 		lC.ctx.fillText('Highscore: '+Math.floor(lC.highScore), constants.width-120, 0);
 	},
@@ -538,6 +561,8 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 			var ts = -((Math.random()*2+1)*constants.playerDefaultSpeed);
 			tx-=ts;
 			backgrounds.push({x:tx,y:ty,h:th,w:tw,s:ts});
+			if(lC.getOptions("color"))
+				backgrounds[backgrounds.length-1].c = "rgba("+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+(Math.random()*.5+.5)+")";
 		}
 		backgrounds.forEach(lC.drawBackground);
 		lC.ctx.lineWidth = 1;
@@ -577,14 +602,17 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.draw();
 		lC.times.lastLoop = (new Date()).getTime();
 		var t_buffer = constants.timePerLoop - (lC.times.update + lC.times.loopDiff + lC.times.draw);
-		if(t_buffer < 0)
+		if(t_buffer < 0){
 			lC.toSlow++;
+			t_buffer = 1;
+		}
 		else
 			lC.toSlow=0;
 		setTimeout(lC.gameLoop,t_buffer);
 	},
 	resizeGame: function(){
 		constants.width = Math.min(document.documentElement.clientWidth - 4*constants.margin,constants.maxWidth);
+		constants.marginRight = constants.width - constants.margin;
 		lC.canvas.width = constants.width;
 	},
 	getOptions: function(name){
@@ -627,4 +655,4 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.drawTitleScreen();
 	}
 };
-window.addEventListener("load",lC.init,true);
+window.addEventListener("DOMContentLoaded",lC.init,true);
