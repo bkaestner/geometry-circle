@@ -50,14 +50,14 @@ var constants = { width : 800, height : 450,
 	margin : 10,
 
 	minG : 5,
-	toSlowThreshold : 20,
+	toSlowThreshold : 20
 };
 
 String.prototype.trim = function(){
   return this.replace (/^\s+/, '').replace(/\s+$/, '');
-}
+};
 
-constants.playerDefaultX = constants.playerDefaultRadius,
+constants.playerDefaultX = constants.playerDefaultRadius;
 constants.playerDefaultY = constants.height/2;
 constants.marginRight = (constants.width - constants.margin);
 constants.marginBottom= (constants.height - constants.margin);
@@ -66,7 +66,7 @@ window.dev = {
 	active:false,
 	logData:0,
 	log: function(str){
-		var now = new Date;
+		var now = new Date();
 		if(window.dev.active)
 			logData.push(Array(now,str));
 		return str;
@@ -113,22 +113,20 @@ var sPlayer = {
 			return;
 		if(this.invincible > 0 && this.invincible%24 < 12)
 			return;
-		lC.ctx.fillStyle = "#000";
-		lC.ctx.strokeStyle = "#000";
-		lC.ctx.save();
-		lC.ctx.translate(this.posX,this.posY);
-		lC.ctx.save();
 		lC.ctx.beginPath();
-		lC.ctx.arc(0,0,this.radius,0,2*Math.PI,false);
+		lC.ctx.moveTo(this.posX,this.posY);
+		lC.ctx.arc(this.posX,this.posY,this.radius,0,2*Math.PI,false);
 		lC.ctx.fillStyle="#fff";
 		lC.ctx.closePath();
 		lC.ctx.fill();
 		lC.ctx.stroke();
-		lC.ctx.restore();
+		lC.ctx.fillStyle = "#000";
+		lC.ctx.strokeStyle = "#000";
+
 		lC.ctx.beginPath();
-		lC.ctx.lineTo(this.radius,0);
-		lC.ctx.lineTo(Math.sin(Math.PI*1.2)*this.radius,Math.cos(Math.PI*1.2)*this.radius);
-		lC.ctx.quadraticCurveTo(0,0,Math.sin(Math.PI*(-1.2+1))*this.radius,Math.cos(Math.PI*(-1.2+1))*this.radius);
+		lC.ctx.lineTo(this.radius+this.posX,this.posY);
+		lC.ctx.lineTo(Math.sin(Math.PI*1.2)*this.radius+this.posX,this.posY+Math.cos(Math.PI*1.2)*this.radius);
+		lC.ctx.quadraticCurveTo(this.posX,this.posY,Math.sin(Math.PI*(-1.2+1))*this.radius+this.posX,this.posY+Math.cos(Math.PI*(-1.2+1))*this.radius);
 		lC.ctx.fill();
 		lC.ctx.closePath();
 		this.extraRotation+=.05;
@@ -137,13 +135,12 @@ var sPlayer = {
 		for(var i = 0; i < this.extraLifes && i < constants.playerMaxShownExtraLifes;++i){
 			lC.ctx.beginPath();
 			var tv = (i+1)*k+this.extraRotation;
-			var tsin = Math.sin(tv)*this.radius;
-			var tcos = Math.cos(tv)*this.radius;
+			var tsin = Math.sin(tv)*this.radius+this.posX;
+			var tcos = Math.cos(tv)*this.radius+this.posY;
 			lC.ctx.moveTo(tsin,tcos);
 			lC.ctx.arc(tsin,tcos,this.radius*.2,0,2*Math.PI,false);
 			lC.ctx.stroke();
 		}
-		lC.ctx.restore();
 	},
 	reset: function(){
 		this.posX = constants.playerDefaultX;
@@ -171,15 +168,18 @@ var sPlayer = {
 
 /* ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ */
 var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highScore:0,
-	debug:false, paused:false, times: {update:0,draw:0,lastLoop:0},
+	debug:false, paused:false, times: {update:0,draw:0,lastLoop:0,lastBuffer:0},
 	nextExtra:constants.defaultExtraLifeGap,  kindOfDifficulty: constants.defaultDifficulty, toSlow:0,
+	deactivateBackground : false, deactivateNiceParticles : false,
+	options: {color:false,mute:false,fullsize:false},
 	pressKey: function(e){
 		lC.keys[e.keyCode] = true;
 		switch(e.keyCode){
 			case 37: case 39: case 38:	case 40:	// arrow keys
 			case 32: e.preventDefault(); break;		// spaaaaace!
-			case 17: lC.keys[32] = true; break;		// ctrl
+			case 17: lC.keys[32] = true; break;		// ctrl ~ autofiring laz0rz?
 			case 77: lC.toggleSound(); break;		// m
+			case 67: lC.toggleOption("color"); break; // c
 			case 80: case 27: lC.togglePause(); break; // p & esc
 			case 82: lC.restartGame(); break;		// r
 			case 114: lC.toggleDebug(); e.preventDefault(); break; // F3
@@ -187,7 +187,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		}
 	},
 	releaseKey: function(e){lC.keys[e.keyCode] = false;},
-	toggleSound: function(){if(lC.bgsound.paused) lC.bgsound.play(); else lC.bgsound.pause();},
+	toggleSound: function(){if(lC.bgsound.paused){ lC.bgsound.play(); lC.removeOption("mute");} else{ lC.bgsound.pause(); lC.setOption("mute");}},
 	toggleDebug: function(){lC.debug = !lC.debug;},
 	startGame: function(e){
 		lC.restartGame();
@@ -212,38 +212,33 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.canvas.addEventListener("click",lC.socialScore,false);
 	},
 	preStartGame: function(e){
-		if(e.keyCode >48 && e.keyCode < 58){	// 1-9
-			lC.kindOfDifficulty = e.keyCode - 48;
-			blinkingTexts.push({t:"Difficulty set to "+lC.kindOfDifficulty+" (kind of)",l:100,f:"24px "+constants.defaultFont,x:constants.width/2,y:constants.height/4,s:0,a:"center"});
-		}
+		if(e.keyCode >48 && e.keyCode < 58)	// 1-9
+			blinkingTexts.push({t:"Difficulty set to "+(lC.kindOfDifficulty = e.keyCode - 48),l:100,f:"24px "+constants.defaultFont,x:constants.width/2,y:constants.height/4,s:0,a:"center"});
 		if(e.keyCode === 32){
-			if(lC.ticks > 0)
-				lC.restartGame();
-			else
-				lC.startGame();
-			e.preventDefault();
+			if(lC.ticks > 0)lC.restartGame();
+			else lC.startGame(); e.preventDefault();
 		}
-		else if(e.keyCode === 88 && lC.ticks > 0){
+		else if(e.keyCode === 88 && lC.ticks > 0)
 			lC.restartGame();
-		}
-		else if(e.keyCode === 77){
-			lC.toggleSound();
-			e.preventDefault();
-		}
+		else if(e.keyCode === 77 && lC.ticks === 0){
+			lC.toggleSound();e.preventDefault();}
 		else if(e.keyCode === 114){
-			lC.toggleDebug();
-			e.preventDefault();
-		}
+			lC.toggleDebug();e.preventDefault();}
 	},
 	restartGame: function(e){
 		window.removeEventListener("keydown",lC.preStartGame,false);
 		lC.canvas.removeEventListener("click",lC.socialScore,false);
-		particles.splice(0,particles.length);
-		circloids.splice(0,circloids.length);
-		niceParticles.splice(0,niceParticles.length);
-		backgrounds.splice(0,backgrounds.length);
-		gravityModifier.splice(0,gravityModifier.length);
-		blinkingTexts.splice(0,blinkingTexts.length);
+		delete particles;
+		delete circloids;
+		delete backgrounds;
+		delete gravityModifier;
+		delete blinkingTexts;
+		particles = [];
+		circloids = [];
+		niceParticles = [];
+		backgrounds = [];
+		gravityModifier = [];
+		blinkingTexts =[];
 		sPlayer.reset();
 		sPlayer.extraLifes = constants.playerDefaultExtraLifes + lC.kindOfDifficulty - 1;
 		lC.ticks = (lC.kindOfDifficulty-1)*constants.defaultExtraLifeGap;
@@ -320,7 +315,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		var tx = constants.width+tr;
 		var ty = Math.random()*(constants.height-2*constants.margin-tr)+constants.margin;
 		var tl = tr;
-		var tdeltax = constants.playerDefaultSpeed*(0.2*(Math.random()-.5/lC.kindOfDifficulty)+1);
+		var tdeltax = constants.playerDefaultSpeed*(0.2*(Math.random()-.5/lC.kindOfDifficulty)+1)+Math.random()*.5*lC.kindOfDifficulty;
 		var tdeltay = Math.random()-0.5;
 		circloids.push({r:tr,x:tx,y:ty,life:tl,speed:{x:-tdeltax,y:-tdeltay},rot:0,rand:Math.random()*0.3});
 	},
@@ -355,20 +350,20 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		/* clean old objects - goodbye my old friends :( */
 		for(var i = 0;i<backgrounds.length;++i){
 			if((backgrounds[i].x+=backgrounds[i].s) + backgrounds[i].w < 0){
-				backgrounds.splice(i--,1);
+				delete backgrounds.splice(i--,1);
 				continue;
 			}
 		}
 		for(var i = 0;i<gravityModifier.length;++i){
 			if((gravityModifier[i].x+=gravityModifier[i].s) + gravityModifier[i].g < 0){
 				lC.addScore(Math.abs(gravityModifier[i].g)+Math.abs(constants.width/gravityModifier[i].s));
-				gravityModifier.splice(i--,1);
+				delete gravityModifier.splice(i--,1);
 				continue;
 			}
 		}
 		for(var i = 0;i<circloids.length;++i){
 			if(circloids[i].x + circloids[i].r < 0 || circloids[i].y + circloids[i].r < 0 || circloids[i].y - circloids[i].r > constants.height){
-				circloids.splice(i--,1);
+				delete circloids.splice(i--,1);
 				continue;
 			}
 			if(circloids[i].life < 0){
@@ -379,7 +374,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 				if(circloids[i].r < sPlayer.radius*.45)	// some people complained about the tiny circloids. happy?
 					circloids[i].r=1.45*sPlayer.radius-circloids[i].r;
 				lC.addScore(circloids[i].r,{x:circloids[i].x,y:circloids[i].y});
-				circloids.splice(i--,1);
+				delete circloids.splice(i--,1);
 				continue;
 			}
 			circloids[i].x+=circloids[i].speed.x;
@@ -389,7 +384,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		/* particles */
 		for(var i = 0;i<particles.length;++i){
 			if(particles[i].x > constants.width || particles[i].x < 0 || particles[i].y < 0 || particles[i].y > constants.height || particles[i].life === 0){
-				particles.splice(i--,1);
+				delete particles.splice(i--,1);
 				continue;
 			}
 			var collision = false;
@@ -399,7 +394,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 				var delta = tmp_x*tmp_x+tmp_y*tmp_y;
 				if(delta < (circloids[j].r+2)*(circloids[j].r+2)){
 					circloids[j].life-=4;
-					particles.splice(i--,1);
+					delete particles.splice(i--,1);
 					collision = true;
 					break;
 				}
@@ -422,7 +417,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		/* nice Particles */
 		for(var i = 0;i<niceParticles.length;++i){
 			if(niceParticles[i].life-- < 0){
-				niceParticles.splice(i--,1);
+				delete niceParticles.splice(i--,1);
 				continue;
 			}
 			for(var j = 0; j < gravityModifier.length;++j){
@@ -453,7 +448,9 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.times.update = ((new Date()).getTime()-t_time);
 	},
 	clear: function(){
-		lC.ctx.clearRect(0,0,lC.canvas.width,lC.canvas.height);
+		//lC.ctx.clearRect(0,0,lC.canvas.width,lC.canvas.height);
+		lC.ctx.fillStyle="#fff";
+		lC.ctx.fillRect(0,0,lC.canvas.width,lC.canvas.height);
 	},
 	drawBackground : function(p){
 			if(p.c)
@@ -475,25 +472,23 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		},
 	drawGravityModifier: function(p){if(p.a === "well")	lC.drawGravityWell(p);	else lC.drawGravityPulser(p);},
 	drawGravityWell: function(p){
-			lC.ctx.save();
 			lC.ctx.fillStyle="#a0a";
-			lC.ctx.translate(p.x, p.y);
-			lC.ctx.rotate(p.r+=0.1);
-			lC.ctx.fillRect(-p.g,-p.g,2*p.g,2*p.g);
-			lC.ctx.restore();
-		},
-	drawGravityPulser: function(p){
-			lC.ctx.save();
-			lC.ctx.fillStyle="#f80";
-			lC.ctx.translate(p.x, p.y);
-			lC.ctx.rotate(p.r+=0.1);
 			lC.ctx.beginPath();
-			lC.ctx.moveTo(p.g*Math.sin(0),p.g*Math.cos(0));
-			lC.ctx.lineTo(p.g*Math.sin(Math.PI*0.66),p.g*Math.cos(Math.PI*0.66));
-			lC.ctx.lineTo(p.g*Math.sin(Math.PI*1.33),p.g*Math.cos(Math.PI*1.33));
+			lC.ctx.moveTo(p.x+p.g*Math.sin(p.r-=0.1),p.y+p.g*Math.cos(p.r));			
+			lC.ctx.lineTo(p.x+p.g*Math.sin(Math.PI*0.5+p.r),p.y+p.g*Math.cos(Math.PI*0.5+p.r));
+			lC.ctx.lineTo(p.x+p.g*Math.sin(Math.PI+p.r),p.y+p.g*Math.cos(Math.PI+p.r));
+			lC.ctx.lineTo(p.x+p.g*Math.sin(Math.PI*1.5+p.r),p.y+p.g*Math.cos(Math.PI*1.5+p.r));
 			lC.ctx.closePath();
 			lC.ctx.fill();
-			lC.ctx.restore();
+		},
+	drawGravityPulser: function(p){			
+			lC.ctx.fillStyle="#f80";			
+			lC.ctx.beginPath();
+			lC.ctx.moveTo(p.x+p.g*Math.sin(p.r-=0.1),p.y+p.g*Math.cos(p.r));
+			lC.ctx.lineTo(p.x+p.g*Math.sin(Math.PI*0.66+p.r),p.y+p.g*Math.cos(Math.PI*0.66+p.r));
+			lC.ctx.lineTo(p.x+p.g*Math.sin(Math.PI*1.33+p.r),p.y+p.g*Math.cos(Math.PI*1.33+p.r));
+			lC.ctx.closePath();
+			lC.ctx.fill();
 		},
 	drawParticle: function(p){
 			lC.ctx.fillStyle="rgba(0,0,0,"+((p.life/200))+")";
@@ -553,7 +548,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.ctx.lineWidth = 3;
 		lC.ctx.fillStyle = "#fff";
 		lC.ctx.strokeStyle = "#000";
-		if(Math.random() > 0.95 && lC.toSlow < constants.toSlowThreshold){
+		if(!lC.deactivateBackground && Math.random() > 0.95){
 			var tw = Math.random()*constants.width*0.2+constants.width*.05;
 			var th = Math.random()*constants.height*0.45;
 			var tx = constants.width+tw;
@@ -561,7 +556,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 			var ts = -((Math.random()*2+1)*constants.playerDefaultSpeed);
 			tx-=ts;
 			backgrounds.push({x:tx,y:ty,h:th,w:tw,s:ts});
-			if(lC.getOptions("color"))
+			if(lC.options.color)
 				backgrounds[backgrounds.length-1].c = "rgba("+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+(Math.random()*.5+.5)+")";
 		}
 		backgrounds.forEach(lC.drawBackground);
@@ -574,7 +569,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 
 		particles.forEach(lC.drawParticle);
 
-		if(lC.toSlow < constants.toSlowThreshold)
+		if(!lC.deactivateNiceParticles)
 			niceParticles.forEach(lC.drawNiceParticle);
 
 		lC.ctx.fillStyle = "#000";
@@ -583,7 +578,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 
 		for(var i = 0; i < blinkingTexts.length;++i){
 			if(typeof blinkingTexts[i].l === "number" && blinkingTexts[i].l-- < 0){
-				blinkingTexts.splice(i--,1);
+				delete blinkingTexts.splice(i--,1);
 				continue;
 			}
 			lC.drawBlinkingText(blinkingTexts[i]);
@@ -601,13 +596,17 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.updateGame();
 		lC.draw();
 		lC.times.lastLoop = (new Date()).getTime();
-		var t_buffer = constants.timePerLoop - (lC.times.update + lC.times.loopDiff + lC.times.draw);
+		var t_buffer = constants.timePerLoop - (lC.times.update + lC.times.loopDiff + lC.times.draw)-1;
+		t_buffer = t_buffer*.75 + lC.times.lastBuffer*.25;
 		if(t_buffer < 0){
 			lC.toSlow++;
+			if(lC.toSlow < constants.toSlowThreshold)
+				lC.deactivateBackground = lC.deactivateNiceParticles = true;
 			t_buffer = 1;
 		}
 		else
 			lC.toSlow=0;
+		lC.times.lastBuffer=t_buffer;
 		setTimeout(lC.gameLoop,t_buffer);
 	},
 	resizeGame: function(){
@@ -615,7 +614,29 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		constants.marginRight = constants.width - constants.margin;
 		lC.canvas.width = constants.width;
 	},
-	getOptions: function(name){
+	updateOptions: function(){
+		lC.options.color = lC.getOption("color");
+		lC.options.mute = lC.getOption("mute");
+		lC.options.fullsize = lC.getOption("fullsize");
+	},
+	setOption: function(k){
+		if(lC.getOption(k) === true)
+			return;
+		window.location.hash+=k+";";
+	},
+	removeOption: function(k){
+		if(lC.getOption(k) !== true)
+			return;
+		window.location.hash = window.location.hash.replace(k+";","");
+		window.location.hash = window.location.hash.replace(k,"");
+	},
+	toggleOption: function(k){
+		if(lC.getOption(k) === true)
+			lC.removeOption(k);
+		else
+			lC.setOption(k);
+	},
+	getOption: function(name){
 		if(!window.location.hash)
 			return undefined;
 		if(window.location.hash.indexOf(name) !== -1)
@@ -627,7 +648,8 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.keys = new Array;
 		lC.canvas = document.getElementById('renderCanvas');
 		lC.ctx = lC.canvas.getContext("2d");
-
+		lC.updateOptions();
+		
 		if(document.cookie){
 			var k = document.cookie.split(";");
 			for(var i=0;i<k.length;++i){
@@ -643,12 +665,14 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.canvas.addEventListener("contextmenu",function(e){e.preventDefault();return false;},false);
 		if(document.getElementById("bgsound")){
 			lC.bgsound = document.getElementById("bgsound");
-			lC.bgsound.addEventListener("ended",function(e){this.currentTime=0;this.play();});
-			if(!lC.getOptions("mute"))
+			lC.bgsound.addEventListener("ended",function(e){this.currentTime=0;this.play();},false);
+			if(!lC.options.mute)
 				lC.bgsound.play();
 		}
-		if(lC.getOptions("fullsize"))
+		if(lC.options.fullsize)
 			lC.resizeGame();
+			
+		window.addEventListener("hashchange",lC.updateOptions,false);
 
 		window.addEventListener("keydown",lC.preStartGame,false);
 		window.addEventListener("keyup",lC.releaseKey,false);
