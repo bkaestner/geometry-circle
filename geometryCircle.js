@@ -59,51 +59,8 @@ String.prototype.trim = function(){
 
 constants.playerDefaultX = constants.playerDefaultRadius;
 constants.playerDefaultY = constants.height/2;
-constants.marginRight    = (constants.width - constants.margin);
-constants.marginBottom   = (constants.height - constants.margin);
-
-var re = {
-	cycle: function(arr, index) {
-		if(arr.len !== 0){
-			var tmp = arr[index];
-			arr[index]       = arr[arr.len - 1];
-			arr[arr.len - 1] = arr[index];
-			--arr.len;
-		}
-	},
-	useUnused: function(arr){
-		if(arr.len === arr.length){
-			arr.push({});			
-		}
-		var el = arr[arr.len];
-		++arr.len;
-		return el;
-	},
-	push: function(arr, obj) {
-		if(arr.len === arr.length){
-			arr.push(obj);						
-		} else {
-			arr[arr.len] = obj;
-		}
-		++arr.len;
-	},
-	init: function() {
-		for(var i = 0; i < arguments.length; ++i){
-			arguments[i].len = 0;
-		}
-	},
-	clean: function(){
-		for(var i = 0; i < arguments.length; ++i){
-			arguments[i].len = 0;
-		}
-	},
-	for_each: function(arr, fun){
-		for(var i = 0; i < arr.len; ++i){
-			fun(arr[i], i, arr);
-		}
-	}
-
-}
+constants.marginRight = (constants.width - constants.margin);
+constants.marginBottom= (constants.height - constants.margin);
 
 window.dev = {
 	active:false,
@@ -132,23 +89,14 @@ var niceParticles = [];
 var backgrounds = [];
 var blinkingTexts = [];
 
-re.init(particles, gravityModifier, circloids, niceParticles, backgrounds, blinkingTexts);
-
 var sPlayer = {
 	posX : constants.playerDefaultX, posY : constants.playerDefaultY, radius: constants.playerDefaultRadius,
 	extraLifes: -1, 	extraRotation: 0, invincible:0,
-	speedX : constants.playerDefaultSpeedX,
-	speedY : constants.playerDefaultSpeedY,
+	speed: {x:constants.playerDefaultSpeedX,y:constants.playerDefaultSpeedY},
 	loadingTime: 0,	reloadTime: constants.playerDefaultReload,
 	gainLife : function(){
 		this.extraLifes++;
-		var el = re.useUnused(blinkingTexts);
-		el.t = "+1 flight unit";
-		el.f = "24px " + constants.defaultFont;
-		el.l = 99;
-		el.x = constants.width/2;
-		el.y = constants.height/2;
-		el.s = 1;
+		blinkingTexts.push({t:"+1 flight unit",f:"24px "+constants.defaultFont,l:99,x:constants.width/2,y:constants.height/2,s:1});
 	},
 	looseLife : function(){
 		this.invincible = constants.playerTimeInvincible;
@@ -158,12 +106,7 @@ var sPlayer = {
 		}
 		var k = constants.playerDefaultExplodeParticles/2;
 		for(var j = 0;j<constants.playerDefaultExplodeParticles;++j)
-			var el = re.useUnused(particles);
-			el.x = Math.sin(j*Math.PI/k)*this.radius+this.posX;
-			el.y = Math.cos(j*Math.PI/k)*this.radius+this.posY;
-			el.speedX = Math.sin(j*Math.PI/k);
-			el.speedY = Math.cos(j*Math.PI/k);
-			el.life   = 150;
+			particles.push({x:Math.sin(j*Math.PI/k)*this.radius+this.posX,y:Math.cos(j*Math.PI/k)*this.radius+this.posY,speed:{x:Math.sin(j*Math.PI/k),y:Math.cos(j*Math.PI/k)},life:150});
 	},
 	draw : function(){
 		if(this.extraLifes <0)
@@ -208,21 +151,16 @@ var sPlayer = {
 		this.invincible = 0;
 	},
 
-	moveLeft : function(){this.posX = (this.posX-=this.speedX) < constants.margin ? constants.margin : this.posX},
-	moveRight : function(){this.posX = (this.posX+=this.speedX) > constants.marginRight ? constants.marginRight: this.posX},
-	moveUp : function(){this.posY = (this.posY-=this.speedY) < constants.margin ? constants.margin : this.posY;},
-	moveDown : function(){this.posY = (this.posY+=this.speedY) > constants.marginBottom ? constants.marginBottom : this.posY},
+	moveLeft : function(){this.posX = (this.posX-=this.speed.x) < constants.margin ? constants.margin : this.posX},
+	moveRight : function(){this.posX = (this.posX+=this.speed.x) > constants.marginRight ? constants.marginRight: this.posX},
+	moveUp : function(){this.posY = (this.posY-=this.speed.y) < constants.margin ? constants.margin : this.posY;},
+	moveDown : function(){this.posY = (this.posY+=this.speed.y) > constants.marginBottom ? constants.marginBottom : this.posY},
 	shoot : function(){
 		if(this.extraLifes < 0)
 			return;
-		var now = Date.now();
+		var now = (new Date()).getTime();
 		if(this.reload !== null && this.reloadTime < now - this.loadingTime){
-			var el = re.useUnused(particles);
-			el.x = this.posX + 20
-			el.y = this.posY
-			el.speedX = 2*constants.playerDefaultSpeed
-			el.speedY = 0
-			el.life   = constants.defaultBulletLifetime
+			particles.push({x:this.posX + 20,y:this.posY,speed:{x:2*constants.playerDefaultSpeed,y:0},life:constants.defaultBulletLifetime});
 			this.loadingTime = now;
 		}
 	}
@@ -265,17 +203,17 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 	},
 	gameOver: function(e){
 		document.cookie = "highscore="+Math.floor(lC.highScore)+";";
-		re.push(blinkingTexts,{t:"Your Score: "+Math.floor(lC.score),f:"24px "+constants.defaultFont,x:constants.width/2,y:((constants.height/2)-48),b:false});
-		re.push(blinkingTexts,{t:"Press r to restart",f:"24px "+constants.defaultFont,x:constants.width/2,y:constants.height/2,s:0});
+		blinkingTexts.push({t:"Your Score: "+Math.floor(lC.score),f:"24px "+constants.defaultFont,x:constants.width/2,y:((constants.height/2)-48),b:false});
+		blinkingTexts.push({t:"Press r to restart",f:"24px "+constants.defaultFont,x:constants.width/2,y:constants.height/2,s:0});
 		
-		re.push(blinkingTexts,{t:"Tweet your score!",c:"#00f",f:"24px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height/1.2,s:0});
+		blinkingTexts.push({t:"Tweet your score!",c:"#00f",f:"24px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height/1.2,s:0});
 		
 		window.addEventListener("keydown",lC.preStartGame,false);
 		lC.canvas.addEventListener("click",lC.socialScore,false);
 	},
 	preStartGame: function(e){
 		if(e.keyCode >48 && e.keyCode < 58)	// 1-9
-			re.push(blinkingTexts,{t:"Difficulty set to "+(lC.kindOfDifficulty = e.keyCode - 48),l:100,f:"24px "+constants.defaultFont,x:constants.width/2,y:constants.height/4,s:0,a:"center"});
+			blinkingTexts.push({t:"Difficulty set to "+(lC.kindOfDifficulty = e.keyCode - 48),l:100,f:"24px "+constants.defaultFont,x:constants.width/2,y:constants.height/4,s:0,a:"center"});
 		if(e.keyCode === 32){
 			if(lC.ticks > 0)lC.restartGame();
 			else lC.startGame(); e.preventDefault();
@@ -290,7 +228,17 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 	restartGame: function(e){
 		window.removeEventListener("keydown",lC.preStartGame,false);
 		lC.canvas.removeEventListener("click",lC.socialScore,false);
-		re.init(particles, circloids, backgrounds, gravityModifier, niceParticles, blinkingTexts);
+		delete particles;
+		delete circloids;
+		delete backgrounds;
+		delete gravityModifier;
+		delete blinkingTexts;
+		particles = [];
+		circloids = [];
+		niceParticles = [];
+		backgrounds = [];
+		gravityModifier = [];
+		blinkingTexts =[];
 		sPlayer.reset();
 		sPlayer.extraLifes = constants.playerDefaultExtraLifes + lC.kindOfDifficulty - 1;
 		lC.ticks = (lC.kindOfDifficulty-1)*constants.defaultExtraLifeGap;
@@ -301,15 +249,15 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 	},
 	drawTitleScreen: function(){
 		sPlayer.extraLifes=-1;
-		re.push(blinkingTexts,{t:"Geometry: Circle",f:"48px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height/2-64,a:"center"});
-		re.push(blinkingTexts,{t:"Press SPACE to START",f:"24px "+constants.defaultFont,b:0,x:constants.width/2,y:constants.height/2,a:"center"});
-		re.push(blinkingTexts,{t:"m: mute",f:"24px "+constants.defaultFont,b:false,x:constants.width/4,y:constants.height/1.5,a:"left"});
-		re.push(blinkingTexts,{t:"r:  restart",f:"24px "+constants.defaultFont,b:false,x:constants.width/4,y:constants.height/1.25,a:"left"});
-		re.push(blinkingTexts,{t:"arrows:  move",f:"24px "+constants.defaultFont,b:false,x:constants.width/1.6,y:constants.height/1.5,a:"left"});
-		re.push(blinkingTexts,{t:"space:     shoot",f:"24px "+constants.defaultFont,b:false,x:constants.width/1.6,y:constants.height/1.25,a:"left"});
-		re.push(blinkingTexts,{t:"Music: Ochen Priyatno [Pleased to Meetcha] by Hyphen Jones",f:"14px "+constants.defaultFont,b:false,x:constants.margin,y:constants.height-40,a:"left"});
-		re.push(blinkingTexts,{t:"Font: \"Passero One\" by Viktoriya Grabowskay",f:"14px "+constants.defaultFont,b:false,x:constants.width-constants.margin,y:constants.height-40,a:"right"});
-		re.push(blinkingTexts,{t:"© Benjamin Kästner 2011",f:"10px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height-10,a:"center"});
+		blinkingTexts.push({t:"Geometry: Circle",f:"48px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height/2-64,a:"center"});
+		blinkingTexts.push({t:"Press SPACE to START",f:"24px "+constants.defaultFont,b:0,x:constants.width/2,y:constants.height/2,a:"center"});
+		blinkingTexts.push({t:"m: mute",f:"24px "+constants.defaultFont,b:false,x:constants.width/4,y:constants.height/1.5,a:"left"});
+		blinkingTexts.push({t:"r:  restart",f:"24px "+constants.defaultFont,b:false,x:constants.width/4,y:constants.height/1.25,a:"left"});
+		blinkingTexts.push({t:"arrows:  move",f:"24px "+constants.defaultFont,b:false,x:constants.width/1.6,y:constants.height/1.5,a:"left"});
+		blinkingTexts.push({t:"space:     shoot",f:"24px "+constants.defaultFont,b:false,x:constants.width/1.6,y:constants.height/1.25,a:"left"});
+		blinkingTexts.push({t:"Music: Ochen Priyatno [Pleased to Meetcha] by Hyphen Jones",f:"14px "+constants.defaultFont,b:false,x:constants.margin,y:constants.height-40,a:"left"});
+		blinkingTexts.push({t:"Font: \"Passero One\" by Viktoriya Grabowskay",f:"14px "+constants.defaultFont,b:false,x:constants.width-constants.margin,y:constants.height-40,a:"right"});
+		blinkingTexts.push({t:"© Benjamin Kästner 2011",f:"10px "+constants.defaultFont,b:false,x:constants.width/2,y:constants.height-10,a:"center"});
 		lC.gameLoop();
 	},
 	blackScreenWithText: function(text){
@@ -346,7 +294,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		}
 		if(pos && pos.x && pos.y){
 			var tf = Math.floor(points);
-			re.push(blinkingTexts,{x:pos.x,y:pos.y,l:30,s:-1,t:"+ "+tf,f:tf+"px "+constants.defaultFont,b:false});
+			blinkingTexts.push({x:pos.x,y:pos.y,l:30,s:-1,t:"+ "+tf,f:tf+"px "+constants.defaultFont,b:false});
 		}
 	},
 	controlMovement : function (){
@@ -363,34 +311,31 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		}
 	},
 	createCircloid : function(){
-		var el = re.useUnused(circloids);
-		el.r = Math.random()*(10)+5; // lC.ticks*0.0001
-		el.x = constants.width+el.r;
-		el.y = Math.random()*(constants.height-2*constants.margin-el.r)+constants.margin;
-		el.l = el.r;
-		el.speedX = -constants.playerDefaultSpeed*(0.2*(Math.random()-.5/lC.kindOfDifficulty)+1)+Math.random()*.5*lC.kindOfDifficulty;
-		el.speedY = -Math.random()-0.5;	
-		el.rot = 0
-		el.rand = Math.random()*0.3;
+		var tr = Math.random()*(10+lC.ticks*0.0001)+5;
+		var tx = constants.width+tr;
+		var ty = Math.random()*(constants.height-2*constants.margin-tr)+constants.margin;
+		var tl = tr;
+		var tdeltax = constants.playerDefaultSpeed*(0.2*(Math.random()-.5/lC.kindOfDifficulty)+1)+Math.random()*.5*lC.kindOfDifficulty;
+		var tdeltay = Math.random()-0.5;
+		circloids.push({r:tr,x:tx,y:ty,life:tl,speed:{x:-tdeltax,y:-tdeltay},rot:0,rand:Math.random()*0.3});
 	},
 	createGravityModifier : function(){
-		var el = re.useUnused(gravityModifier);
-		el.g = Math.random()*10+constants.minG;
-		el.x = constants.width+el.g;
-		el.y = Math.random()*constants.height;
-		el.s = -(Math.random()+constants.playerDefaultSpeed*.25);
-		el.a = "well";
-		el.x-=el.s;
+		var tg = Math.random()*10+constants.minG;
+		var tx = constants.width+tg;
+		var ty = Math.random()*constants.height;
+		var ts = -(Math.random()+constants.playerDefaultSpeed*.25);
+		var ta = "well";
+		tx-=ts;
 		if(Math.random() > .5){
-			el.a = "pulse";
-			el.g *=-1;
+			ta = "pulse";
+			tg*=-1;
 		}
-		el.r = 0;
+		gravityModifier.push({x:tx,y:ty,g:tg,s:ts,r:0,a:ta});
 	},
 	updateGame: function(){
 		if(lC.paused)
 			return;
-		var t_time = Date.now();
+		var t_time = (new Date()).getTime();
 
 		lC.controlMovement();
 
@@ -398,95 +343,95 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		if(Math.random() > 0.90 - 0.05*Math.abs(Math.sin(0.0001*lC.ticks))){
 			lC.createCircloid();
 		}
-		if(Math.random() > 0.999 - lC.ticks*0.00000002 - 0.001/(gravityModifier.len+1)){
+		if(Math.random() > 0.999 - lC.ticks*0.00000002 - 0.001/(gravityModifier.length+1)){
 			lC.createGravityModifier();
 		}
 
 		/* clean old objects - goodbye my old friends :( */
-		for(var i = 0; i < backgrounds.len;++i){
+		for(var i = 0;i<backgrounds.length;++i){
 			if((backgrounds[i].x+=backgrounds[i].s) + backgrounds[i].w < 0){
-				re.cycle(backgrounds,i);
+				delete backgrounds.splice(i--,1);
 				continue;
 			}
 		}
-		for(var i = 0;i<gravityModifier.len;++i){
+		for(var i = 0;i<gravityModifier.length;++i){
 			if((gravityModifier[i].x+=gravityModifier[i].s) + gravityModifier[i].g < 0){
 				lC.addScore(Math.abs(gravityModifier[i].g)+Math.abs(constants.width/gravityModifier[i].s));
-				re.cycle(gravityModifier,i);
+				delete gravityModifier.splice(i--,1);
 				continue;
 			}
 		}
-		for(var i = 0;i<circloids.len;++i){
+		for(var i = 0;i<circloids.length;++i){
 			if(circloids[i].x + circloids[i].r < 0 || circloids[i].y + circloids[i].r < 0 || circloids[i].y - circloids[i].r > constants.height){
-				re.cycle(circloids,i);
+				delete circloids.splice(i--,1);
 				continue;
 			}
 			if(circloids[i].life < 0){
 				var k = constants.circloidsDefaultNiceExplodeParticles/2;
 				for(var j = 0;j<constants.circloidsDefaultNiceExplodeParticles ;++j)
-					re.push(niceParticles,{x:Math.sin(j*Math.PI/k)*circloids[i].r+circloids[i].x,y:Math.cos(j*Math.PI/k)*circloids[i].r+circloids[i].y,speedX:Math.sin(j*Math.PI/k)+circloids[i].speedX,speedY:Math.cos(j*Math.PI/k)+circloids[i].speedY,life:100});
+					niceParticles.push({x:Math.sin(j*Math.PI/k)*circloids[i].r+circloids[i].x,y:Math.cos(j*Math.PI/k)*circloids[i].r+circloids[i].y,speed:{x:Math.sin(j*Math.PI/k)+circloids[i].speed.x,y:Math.cos(j*Math.PI/k)+circloids[i].speed.y},life:100});
 
 				if(circloids[i].r < sPlayer.radius*.45)	// some people complained about the tiny circloids. happy?
 					circloids[i].r=1.45*sPlayer.radius-circloids[i].r;
 				lC.addScore(circloids[i].r,{x:circloids[i].x,y:circloids[i].y});
-				re.cycle(circloids,i);
+				delete circloids.splice(i--,1);
 				continue;
 			}
-			circloids[i].x+=circloids[i].speedX;
-			circloids[i].y+=circloids[i].speedY;
+			circloids[i].x+=circloids[i].speed.x;
+			circloids[i].y+=circloids[i].speed.y;
 		}
 
 		/* particles */
-		for(var i = 0;i<particles.len;++i){
+		for(var i = 0;i<particles.length;++i){
 			if(particles[i].x > constants.width || particles[i].x < 0 || particles[i].y < 0 || particles[i].y > constants.height || particles[i].life === 0){
-				re.cycle(particles,i);
+				delete particles.splice(i--,1);
 				continue;
 			}
 			var collision = false;
-			for(var j = 0; j < circloids.len;++j){
+			for(var j = 0; j < circloids.length;++j){
 				var tmp_x = circloids[j].x - particles[i].x;
 				var tmp_y = circloids[j].y - particles[i].y;
 				var delta = tmp_x*tmp_x+tmp_y*tmp_y;
 				if(delta < (circloids[j].r+2)*(circloids[j].r+2)){
 					circloids[j].life-=4;
-					re.cycle(particles,i);
+					delete particles.splice(i--,1);
 					collision = true;
 					break;
 				}
 			}
 			if(collision)
 				continue;
-			for(var j = 0; j < gravityModifier.len;++j){
+			for(var j = 0; j < gravityModifier.length;++j){
 				var tmp_x = gravityModifier[j].x - particles[i].x;
 				var tmp_y = gravityModifier[j].y - particles[i].y;
 				var delta = (tmp_x*tmp_x+tmp_y*tmp_y);
-				particles[i].speedX+=tmp_x*gravityModifier[j].g/delta;
-				particles[i].speedY+=tmp_y*gravityModifier[j].g/delta;
+				particles[i].speed.x+=tmp_x*gravityModifier[j].g/delta;
+				particles[i].speed.y+=tmp_y*gravityModifier[j].g/delta;
 			}
-			particles[i].x+=particles[i].speedX;
-			particles[i].y+=particles[i].speedY;
+			particles[i].x+=particles[i].speed.x;
+			particles[i].y+=particles[i].speed.y;
 			if(particles[i].life)
 				particles[i].life--;
 		}
 
 		/* nice Particles */
-		for(var i = 0;i<niceParticles.len;++i){
+		for(var i = 0;i<niceParticles.length;++i){
 			if(niceParticles[i].life-- < 0){
-				re.cycle(niceParticles,i);
+				delete niceParticles.splice(i--,1);
 				continue;
 			}
-			for(var j = 0; j < gravityModifier.len;++j){
+			for(var j = 0; j < gravityModifier.length;++j){
 				var tmp_x = gravityModifier[j].x - niceParticles[i].x;
 				var tmp_y = gravityModifier[j].y - niceParticles[i].y;
 				var delta = (tmp_x*tmp_x+tmp_y*tmp_y);
-				niceParticles[i].speedX+=tmp_x*gravityModifier[j].g/delta;
-				niceParticles[i].speedY+=tmp_y*gravityModifier[j].g/delta;
+				niceParticles[i].speed.x+=tmp_x*gravityModifier[j].g/delta;
+				niceParticles[i].speed.y+=tmp_y*gravityModifier[j].g/delta;
 			}
-			niceParticles[i].x+=niceParticles[i].speedX;
-			niceParticles[i].y+=niceParticles[i].speedY;
+			niceParticles[i].x+=niceParticles[i].speed.x;
+			niceParticles[i].y+=niceParticles[i].speed.y;
 		}
 		if(sPlayer.invincible === 0 && sPlayer.extraLifes >= 0)
-			for(var i = 0;i<circloids.len;++i){
+			for(var i = 0;i<circloids.length;++i){
 				var deltax = circloids[i].x - sPlayer.posX;
 				var deltay = circloids[i].y - sPlayer.posY;
 				var sumr = circloids[i].r + sPlayer.radius;
@@ -500,7 +445,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 			lC.ticks++;
 			lC.addScore(1);
 		}
-		lC.times.update = (Date.now()-t_time);
+		lC.times.update = ((new Date()).getTime()-t_time);
 	},
 	clear: function(){
 		//lC.ctx.clearRect(0,0,lC.canvas.width,lC.canvas.height);
@@ -596,7 +541,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 	draw : function(){
 		if(lC.paused)
 			return;
-		var t_time = Date.now();
+		var t_time = (new Date()).getTime();
 		lC.clear();
 
 		/* backgrounds ~ they are not really a part of the game, so.... */
@@ -610,31 +555,30 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 			var ty = constants.height-th;
 			var ts = -((Math.random()*2+1)*constants.playerDefaultSpeed);
 			tx-=ts;
-			re.push(backgrounds,{x:tx,y:ty,h:th,w:tw,s:ts});
+			backgrounds.push({x:tx,y:ty,h:th,w:tw,s:ts});
 			if(lC.options.color)
-				backgrounds[backgrounds.len-1].c = "rgba("+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+(Math.random()*.5+.5)+")";
+				backgrounds[backgrounds.length-1].c = "rgba("+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+Math.floor(Math.random()*120)+","+(Math.random()*.5+.5)+")";
 		}
-
-		re.for_each(backgrounds, lC.drawBackground);
+		backgrounds.forEach(lC.drawBackground);
 		lC.ctx.lineWidth = 1;
-		re.for_each(gravityModifier, lC.drawGravityModifier);
+		gravityModifier.forEach(lC.drawGravityModifier);
 
-		re.for_each(circloids,lC.drawCircloid);
+		circloids.forEach(lC.drawCircloid);
 
 		sPlayer.draw();
 
-		re.for_each(particles,lC.drawParticle);
+		particles.forEach(lC.drawParticle);
 
 		if(!lC.deactivateNiceParticles)
-			re.for_each(niceParticles,lC.drawNiceParticle);
+			niceParticles.forEach(lC.drawNiceParticle);
 
 		lC.ctx.fillStyle = "#000";
 		lC.ctx.strokeStyle = "#fff";
 		lC.ctx.textAlign = "center";
 
-		for(var i = 0; i < blinkingTexts.len;++i){
+		for(var i = 0; i < blinkingTexts.length;++i){
 			if(typeof blinkingTexts[i].l === "number" && blinkingTexts[i].l-- < 0){
-				re.cycle(blinkingTexts,i);
+				delete blinkingTexts.splice(i--,1);
 				continue;
 			}
 			lC.drawBlinkingText(blinkingTexts[i]);
@@ -643,15 +587,15 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		lC.drawScore();
 
 		if(lC.debug) lC.drawDebugInformation();
-		lC.times.draw = (Date.now()-t_time);
+		lC.times.draw = ((new Date()).getTime()-t_time);
 	},
 	gameLoop: function(){
 		if(lC.paused)
 			return;
-		lC.times.loopDiff = Date.now() - lC.times.lastLoop ;
+		lC.times.loopDiff = (new Date()).getTime() - lC.times.lastLoop ;
 		lC.updateGame();
 		lC.draw();
-		lC.times.lastLoop = Date.now();
+		lC.times.lastLoop = (new Date()).getTime();
 		var t_buffer = constants.timePerLoop - (lC.times.update + lC.times.loopDiff + lC.times.draw)-1;
 		t_buffer = t_buffer*.75 + lC.times.lastBuffer*.25;
 		if(t_buffer < 0){
@@ -700,7 +644,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		return false;
 	},
 	init : function(){
-		lC.reload = Date.now();
+		lC.reload = (new Date()).getTime();
 		lC.keys = new Array;
 		lC.canvas = document.getElementById('renderCanvas');
 		lC.ctx = lC.canvas.getContext("2d");
@@ -708,7 +652,7 @@ var lC = {canvas:null, ctx:null, bgsound: null, keys:0,	ticks:0, score:0, highSc
 		
 		if(document.cookie){
 			var k = document.cookie.split(";");
-			for(var i=0;i<k.len;++i){
+			for(var i=0;i<k.length;++i){
 				var t=k[i].split("=");
 				if(t[0].trim() === "highscore")
 					lC.highScore = t[1];
