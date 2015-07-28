@@ -1,4 +1,4 @@
-# Geometry Circle
+# Geometry Circle ([play on GitHub](http://bkaes.github.io/geometry-circle/))
 
 This has been an old project (from 2011!) where I've simply tried to create a game within a single day. The original prototype with the very basic enemies took about 4-8 hours back then, the implementation of the gravity wells took another hour. I'm not really sure about that since I didn't commit very often. I was still new to git at that point.
 
