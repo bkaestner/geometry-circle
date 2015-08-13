@@ -13,7 +13,7 @@
  *   window.msRequestAnimationFrame ||
  *   window.mozRequestAnimationFrame ||
  *   function(e){setTimeout(e,10);};
- * @endcode{.js}
+ * @endcode
  *
  * That should give you an idea _how_ old the code is. Emscripten wasn't really
  * a thing at that time, and people were getting their feet wet with Canvas.
@@ -38,5 +38,12 @@
 // $.ready(...). At that point, the DOM has been parsed and all HTML elements
 // are known to the browser.
 window.addEventListener("DOMContentLoaded",(function(){
-  //! @todo Implement the game :>
+// Convention: constants are capital with underscore.
+//
+// @remark If the current trend continues and I write about one line per week,
+//         ES2015 will be fully supported by __all__ major browsers and I can
+//         use `const`. Yay.
+var GAME_WIDTH  = 800;
+var GAME_HEIGHT = 450;
+
 })(window));
